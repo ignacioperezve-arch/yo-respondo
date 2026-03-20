@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="es" data-lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¡Yo Respondo! — Sistema Interactivo de Quiz</title>
+  <meta name="description" content="Sistema de quiz interactivo con buzzers para eventos, team building y educación. Hasta 4 jugadores, categorías personalizables, versión WiFi disponible.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===================== VARIABLES ===================== */
+    :root {
+      --bg:       #04040c;
+      --bg2:      #080814;
+      --gold:     #F5C518;
+      --gold-dk:  #b8960c;
+      --gold-lt:  #ffe566;
+      --amber:    #FF9500;
+      --white:    #fafaff;
+      --muted:    rgba(245,197,24,0.35);
+      --gray:     #666;
+      --red:      #E63946;
+      --yellow:   #F5C518;
+      --green:    #2DC653;
+      --blue:     #4895EF;
+      --fd:       'Cinzel', serif;
+      --fb:       'Outfit', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--fb);
+      background: var(--bg);
+      color: var(--white);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* grain */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 9999; opacity: 0.3;
+    }
+
+    /* ===================== NAV ===================== */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem;
+      transition: background 0.35s, border-color 0.35s;
+    }
+    nav.scrolled {
+      background: rgba(4,4,12,0.94);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(245,197,24,0.12);
+    }
+
+    .nav-logo { display: flex; align-items: center; gap: 0.7rem; text-decoration: none; }
+    .nav-logo img { width: 42px; height: 42px; border-radius: 50%; object-fit: contain; }
+    .nav-logo-text {
+      font-family: var(--fd); font-size: 0.9rem; font-weight: 700;
+      color: var(--gold); letter-spacing: 0.06em;
+    }
+
+    .nav-links { display: flex; align-items: center; gap: 1.8rem; list-style: none; }
+    .nav-links a {
+      font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--gold); }
+
+    .nav-right { display: flex; align-items: center; gap: 0.8rem; }
+
+    .lang-toggle { display: flex; border: 1px solid rgba(245,197,24,0.28); border-radius: 3px; overflow: hidden; }
+    .lang-btn {
+      background: none; border: none; color: rgba(255,255,255,0.45);
+      font-family: var(--fb); font-size: 0.68rem; letter-spacing: 0.12em;
+      padding: 0.32rem 0.65rem; cursor: pointer; transition: all 0.2s;
+    }
+    .lang-btn.active { background: var(--gold); color: var(--bg); font-weight: 700; }
+
+    .btn-wa {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: #25D366; color: #fff;
+      font-family: var(--fb); font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 0.55rem 1.1rem; border-radius: 3px; text-decoration: none;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .btn-wa:hover { background: #1ebe5c; transform: translateY(-1px); }
+
+    .hamburger {
+      display: none; flex-direction: column; gap: 5px;
+      cursor: pointer; background: none; border: none; padding: 0.4rem;
+    }
+    .hamburger span { display: block; width: 22px; height: 2px; background: var(--gold); transition: all 0.3s; }
+
+    /* ===================== UTILITIES ===================== */
+    .container       { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+    .container-narrow { max-width: 820px; margin: 0 auto; padding: 0 2rem; }
+
+    .section-label {
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.45em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 0.6rem;
+    }
+    .section-title {
+      font-family: var(--fd); font-size: clamp(2rem, 4.5vw, 3.2rem);
+      font-weight: 700; line-height: 1.1; margin-bottom: 1.2rem;
+    }
+    .section-title span { color: var(--gold); }
+    .divider { width: 44px; height: 3px; background: linear-gradient(90deg, var(--gold), transparent); margin: 1rem 0 1.8rem; }
+
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    .btn-gold {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--gold); color: var(--bg);
+      font-family: var(--fb); font-weight: 700; font-size: 0.78rem;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      padding: 0.95rem 2rem; text-decoration: none;
+      clip-path: polygon(10px 0%, 100% 0%, calc(100%-10px) 100%, 0% 100%);
+      transition: background 0.2s, transform 0.2s;
+    }
+    .btn-gold:hover { background: var(--gold-lt); transform: translateY(-2px); }
+
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      border: 2px solid rgba(245,197,24,0.45); color: var(--gold);
+      font-family: var(--fb); font-weight: 600; font-size: 0.78rem;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      padding: 0.95rem 2rem; text-decoration: none;
+      clip-path: polygon(10px 0%, 100% 0%, calc(100%-10px) 100%, 0% 100%);
+      transition: all 0.2s;
+    }
+    .btn-outline:hover { background: rgba(245,197,24,0.08); transform: translateY(-2px); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===================== HERO ===================== */
+    .hero {
+      min-height: 100vh;
+      position: relative; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 7rem 2rem 5rem;
+      overflow: hidden;
+    }
+
+    .hero-spotlight {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 75% 55% at 50% 0%, rgba(245,197,24,0.13) 0%, transparent 65%),
+        radial-gradient(ellipse 40% 30% at 15% 90%, rgba(72,149,239,0.06) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 30% at 85% 85%, rgba(45,198,83,0.06) 0%, transparent 55%),
+        var(--bg);
+      z-index: 0;
+    }
+
+    /* floating led dots bg */
+    .led-field { position: absolute; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
+    .led-dot {
+      position: absolute; width: 5px; height: 5px;
+      border-radius: 50%; animation: ledPulse 3s ease-in-out infinite;
+    }
+    @keyframes ledPulse {
+      0%,100% { opacity: 0.08; transform: scale(1); }
+      50%      { opacity: 0.45; transform: scale(1.4); }
+    }
+
+    .hero-content { position: relative; z-index: 2; max-width: 860px; }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      border: 1px solid rgba(245,197,24,0.35);
+      padding: 0.38rem 1rem; border-radius: 100px;
+      font-size: 0.68rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold);
+      margin-bottom: 2rem;
+      opacity: 0; animation: fadeUp 0.8s 0.15s forwards;
+    }
+    .badge-pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: ledPulse 1.5s ease-in-out infinite; }
+
+    .hero-logo-wrap {
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.3s forwards;
+      width: 100%;
+      max-width: 680px;   /* ajusta este valor a tu gusto */
+    }
+
+    .hero-logo-wrap img {
+      width: 100%;
+      height: auto;        /* la altura se calcula sola según el ancho */
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 0 40px rgba(245,197,24,0.55));
+      animation: logoFloat 4s ease-in-out infinite;
+    }
+    @keyframes logoFloat {
+      0%,100% { transform: translateY(0);   filter: drop-shadow(0 0 40px rgba(245,197,24,0.55)); }
+      50%      { transform: translateY(-8px); filter: drop-shadow(0 0 65px rgba(245,197,24,0.85)); }
+    }
+
+    /* marquee title frame */
+    
+    /* LED bulbs on frame */
+   
+
+
+    .hero-sub {
+      font-size: clamp(0.9rem, 1.8vw, 1.15rem); font-weight: 300;
+      color: rgba(255,255,255,0.6); max-width: 540px; margin: 0 auto 2.5rem;
+      line-height: 1.75;
+      opacity: 0; animation: fadeUp 0.8s 0.7s forwards;
+    }
+
+    .hero-cta {
+      display: flex; align-items: center; justify-content: center;
+      gap: 1rem; flex-wrap: wrap;
+      opacity: 0; animation: fadeUp 0.8s 0.9s forwards;
+    }
+
+    .scroll-cue {
+      position: absolute; bottom: 2.2rem; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+      z-index: 2; opacity: 0; animation: fadeUp 1s 1.2s forwards;
+    }
+    .scroll-line {
+      width: 1px; height: 38px;
+      background: linear-gradient(to bottom, var(--gold), transparent);
+      animation: scrollLine 2.2s ease-in-out infinite;
+    }
+    @keyframes scrollLine {
+      0%   { transform: scaleY(0); transform-origin: top; }
+      50%  { transform: scaleY(1); transform-origin: top; }
+      51%  { transform: scaleY(1); transform-origin: bottom; }
+      100% { transform: scaleY(0); transform-origin: bottom; }
+    }
+
+    /* ===================== FEATURES STRIP ===================== */
+    .feat-strip {
+      background: rgba(245,197,24,0.04);
+      border-top: 1px solid rgba(245,197,24,0.09);
+      border-bottom: 1px solid rgba(245,197,24,0.09);
+      padding: 1.8rem 0; overflow-x: auto;
+    }
+    .feat-row {
+      display: flex; align-items: stretch; justify-content: center;
+      min-width: max-content; margin: 0 auto;
+    }
+    .feat-pill {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.7rem 1.8rem;
+      border-right: 1px solid rgba(245,197,24,0.12);
+    }
+    .feat-pill:last-child { border-right: none; }
+    .feat-icon { font-size: 1.3rem; }
+    .feat-text { font-size: 0.78rem; font-weight: 500; color: rgba(255,255,255,0.75); white-space: nowrap; }
+
+    /* ===================== MODES ===================== */
+    .modes-section { padding: 7rem 0; position: relative; }
+    .modes-section::before {
+      content: ''; position: absolute; top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 1px; height: 72px;
+      background: linear-gradient(to bottom, transparent, rgba(245,197,24,0.25));
+    }
+
+    .modes-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1.2rem; margin-top: 3rem;
+    }
+
+    .mode-card {
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px; overflow: hidden;
+      transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+    .mode-card:hover { transform: translateY(-6px); }
+
+    .mode-thumb {
+      width: 100%; height: 200px;
+      object-fit: cover; object-position: top center;
+      display: block;
+      transition: filter 0.3s;
+      filter: saturate(0.9);
+    }
+    .mode-card:hover .mode-thumb { filter: saturate(1.1); }
+
+    .mode-thumb-placeholder {
+      width: 100%; height: 200px;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 0.5rem;
+    }
+
+    .mode-body { padding: 1.4rem; }
+    .mode-tag { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.4rem; }
+    .mode-name { font-family: var(--fd); font-size: 1.05rem; font-weight: 700; margin-bottom: 0.6rem; color: var(--white); line-height: 1.2; }
+    .mode-desc { font-size: 0.82rem; color: rgba(255,255,255,0.55); line-height: 1.65; }
+
+    .mode-dots { display: flex; gap: 5px; margin-top: 1rem; }
+    .pdot { width: 10px; height: 10px; border-radius: 50%; }
+
+    .mode-card.c-red    { border-color: rgba(230,57,70,0.3); }
+    .mode-card.c-blue   { border-color: rgba(72,149,239,0.3); }
+    .mode-card.c-green  { border-color: rgba(45,198,83,0.3); }
+    .mode-card.c-gold   { border-color: rgba(245,197,24,0.3); }
+
+    .mode-card.c-red:hover   { border-color: rgba(230,57,70,0.8);  box-shadow: 0 20px 55px rgba(0,0,0,0.4), 0 0 28px rgba(230,57,70,0.15); }
+    .mode-card.c-blue:hover  { border-color: rgba(72,149,239,0.8); box-shadow: 0 20px 55px rgba(0,0,0,0.4), 0 0 28px rgba(72,149,239,0.15); }
+    .mode-card.c-green:hover { border-color: rgba(45,198,83,0.8);  box-shadow: 0 20px 55px rgba(0,0,0,0.4), 0 0 28px rgba(45,198,83,0.15); }
+    .mode-card.c-gold:hover  { border-color: rgba(245,197,24,0.8); box-shadow: 0 20px 55px rgba(0,0,0,0.4), 0 0 28px rgba(245,197,24,0.15); }
+
+    /* ===================== DEMO ===================== */
+    .demo-section {
+      padding: 7rem 0;
+      background: var(--bg2);
+      position: relative;
+    }
+    .demo-section::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 55% 40% at 50% 50%, rgba(245,197,24,0.04) 0%, transparent 70%);
+    }
+    .demo-inner { position: relative; z-index: 2; }
+
+    .bg-toggle {
+      display: inline-flex; align-items: center; gap: 0.7rem;
+      border: 1px solid rgba(245,197,24,0.22);
+      border-radius: 100px; padding: 0.65rem 1.4rem;
+      cursor: pointer; background: rgba(255,255,255,0.03);
+      transition: all 0.2s; user-select: none; margin-bottom: 2.5rem;
+    }
+    .bg-toggle:hover { background: rgba(245,197,24,0.07); border-color: rgba(245,197,24,0.42); }
+    .bg-toggle-label { font-size: 0.76rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.65); }
+
+    .mbars { display: flex; align-items: flex-end; gap: 2px; height: 16px; }
+    .mbar {
+      width: 3px; background: var(--gold); border-radius: 2px;
+      animation: mbarAnim 0.75s ease-in-out infinite alternate;
+    }
+    .mbar:nth-child(2) { animation-delay: 0.12s; animation-duration: 0.65s; }
+    .mbar:nth-child(3) { animation-delay: 0.22s; animation-duration: 0.85s; }
+    .mbar:nth-child(4) { animation-delay: 0.05s; animation-duration: 0.6s; }
+    @keyframes mbarAnim { from { height: 3px; } to { height: 14px; } }
+    .mbars.paused .mbar { animation: none; height: 3px; }
+
+    .buzzers { display: flex; align-items: flex-end; justify-content: center; gap: 2.5rem; flex-wrap: wrap; margin: 1rem 0 2rem; }
+    .buzzer-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.9rem; }
+    .buzzer-lbl { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.4); transition: color 0.2s; }
+
+    .buzzer {
+      width: 115px; height: 115px; border-radius: 50%; border: none;
+      cursor: pointer; position: relative; outline: none;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; transition: transform 0.12s;
+    }
+    .buzzer::before {
+      content: ''; position: absolute; inset: -5px;
+      border-radius: 50%; border: 2px solid currentColor;
+      opacity: 0.28; transition: opacity 0.2s;
+    }
+    .buzzer:hover::before { opacity: 0.75; }
+    .buzzer:active { transform: scale(0.91); }
+
+    .buzzer.red    { background: radial-gradient(circle at 35% 33%, #ff7070, #E63946, #8a1520); color:#E63946; box-shadow: 0 9px 0 #620d16, 0 0 30px rgba(230,57,70,0.3); }
+    .buzzer.yellow { background: radial-gradient(circle at 35% 33%, #ffe980, #F5C518, #937500); color:#F5C518; box-shadow: 0 9px 0 #5c4500, 0 0 30px rgba(245,197,24,0.3); }
+    .buzzer.green  { background: radial-gradient(circle at 35% 33%, #60e07c, #2DC653, #0a6020); color:#2DC653; box-shadow: 0 9px 0 #063c14, 0 0 30px rgba(45,198,83,0.3); }
+    .buzzer.blue   { background: radial-gradient(circle at 35% 33%, #84c0f8, #4895EF, #143888); color:#4895EF; box-shadow: 0 9px 0 #0a2255, 0 0 30px rgba(72,149,239,0.3); }
+
+    .buzzer.red:hover    { box-shadow: 0 9px 0 #620d16, 0 0 55px rgba(230,57,70,0.5); }
+    .buzzer.yellow:hover { box-shadow: 0 9px 0 #5c4500, 0 0 55px rgba(245,197,24,0.5); }
+    .buzzer.green:hover  { box-shadow: 0 9px 0 #063c14, 0 0 55px rgba(45,198,83,0.5); }
+    .buzzer.blue:hover   { box-shadow: 0 9px 0 #0a2255, 0 0 55px rgba(72,149,239,0.5); }
+
+    @keyframes buzzPop { 0%{transform:scale(0.9)} 60%{transform:scale(1.06)} 100%{transform:scale(1)} }
+    .buzzer.popping { animation: buzzPop 0.28s ease-out; }
+
+    .demo-note-small { font-size: 0.76rem; color: rgba(255,255,255,0.3); font-style: italic; text-align: center; }
+
+    .audio-tip {
+      display: none;
+      max-width: 480px; margin: 1.5rem auto 0;
+      padding: 0.9rem 1.4rem;
+      background: rgba(245,197,24,0.07);
+      border: 1px solid rgba(245,197,24,0.22);
+      border-radius: 8px;
+      font-size: 0.8rem; color: var(--gold); text-align: center;
+    }
+
+    /* ===================== CATEGORIES ===================== */
+    .cat-section { padding: 7rem 0; }
+
+    .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4.5rem; align-items: center; margin-top: 3rem; }
+    .cat-text p { font-size: 0.9rem; color: rgba(255,255,255,0.6); line-height: 1.8; margin-bottom: 0.9rem; }
+    .cat-text strong { color: rgba(255,255,255,0.85); }
+
+    .cat-tags { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 1.5rem; }
+    .cat-tag {
+      font-size: 0.67rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 0.32rem 0.75rem; border-radius: 100px;
+      border: 1px solid rgba(245,197,24,0.28);
+      color: var(--gold); background: rgba(245,197,24,0.06);
+    }
+
+    .cat-img-wrap {
+      border-radius: 14px; overflow: hidden;
+      border: 1px solid rgba(245,197,24,0.18);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.55);
+    }
+    .cat-img-wrap img { width: 100%; display: block; }
+
+    /* ===================== APP ===================== */
+    .app-section {
+      padding: 7rem 0;
+      background: var(--bg2); position: relative; overflow: hidden;
+    }
+    .app-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center; margin-top: 3rem; }
+    .app-text p { font-size: 0.9rem; color: rgba(255,255,255,0.6); line-height: 1.8; margin-bottom: 0.9rem; }
+
+    .soon-badge {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      background: rgba(245,197,24,0.1); border: 1px solid rgba(245,197,24,0.38);
+      color: var(--gold); font-size: 0.67rem; font-weight: 700;
+      letter-spacing: 0.25em; text-transform: uppercase;
+      padding: 0.45rem 0.9rem; border-radius: 100px; margin-bottom: 1.4rem;
+    }
+
+  
+    
+    .phone-frame img { width: 100%; display: block; }
+
+    /* dev progress */
+    .dev-prog { margin-top: 2rem; }
+    .dev-prog-lbl { display: flex; justify-content: space-between; font-size: 0.7rem; color: rgba(255,255,255,0.45); margin-bottom: 0.45rem; }
+    .dev-track { height: 4px; background: rgba(255,255,255,0.08); border-radius: 100px; overflow: hidden; }
+    .dev-fill {
+      height: 100%; width: 65%;
+      background: linear-gradient(90deg, var(--gold-dk), var(--gold));
+      border-radius: 100px; position: relative;
+    }
+    .dev-fill::after {
+      content: ''; position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+      width: 8px; height: 8px; background: var(--gold); border-radius: 50%;
+      box-shadow: 0 0 10px var(--gold);
+    }
+
+    /* ===================== EDU ===================== */
+    .edu-section { padding: 7rem 0; }
+    .edu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.4rem; margin-top: 3rem; }
+    .edu-card {
+      padding: 2rem; background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.07); border-radius: 14px;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+    .edu-card:hover { transform: translateY(-4px); border-color: rgba(245,197,24,0.28); }
+    .edu-icon { font-size: 2.4rem; margin-bottom: 1rem; display: block; }
+    .edu-card-title { font-family: var(--fd); font-size: 0.95rem; font-weight: 600; color: var(--gold); margin-bottom: 0.7rem; }
+    .edu-card-text { font-size: 0.82rem; color: rgba(255,255,255,0.5); line-height: 1.7; }
+
+    .wifi-bar {
+      margin-top: 3rem; padding: 1.8rem 2rem;
+      background: rgba(72,149,239,0.05);
+      border: 1px solid rgba(72,149,239,0.18); border-radius: 14px;
+      display: flex; align-items: center; gap: 1.5rem;
+    }
+    .wifi-icon { font-size: 2.4rem; flex-shrink: 0; }
+    .wifi-title { font-family: var(--fd); font-size: 0.95rem; color: var(--blue); margin-bottom: 0.45rem; }
+    .wifi-text { font-size: 0.82rem; color: rgba(255,255,255,0.5); line-height: 1.7; }
+
+    /* ===================== GALLERY ===================== */
+    .gal-section { padding: 7rem 0; background: var(--bg2); }
+    .gal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; margin-top: 3rem; }
+    .gal-item {
+      border-radius: 14px; overflow: hidden;
+      border: 1px solid rgba(245,197,24,0.14);
+      transition: transform 0.3s, border-color 0.3s;
+      background: #0a0a18;
+    }
+    .gal-item:hover { transform: scale(1.02); border-color: rgba(245,197,24,0.45); }
+    .gal-item img { width: 100%; height: 310px; object-fit: contain; display: block; background: #0a0a18; }
+    .gal-caption { padding: 1rem 1.4rem; font-size: 0.78rem; color: rgba(255,255,255,0.4); border-top: 1px solid rgba(245,197,24,0.08); }
+
+    /* ===================== CTA BAND ===================== */
+    .cta-band {
+      padding: 6rem 2rem; text-align: center;
+      background: linear-gradient(160deg, rgba(245,197,24,0.07) 0%, transparent 45%, rgba(245,197,24,0.04) 100%);
+      border-top: 1px solid rgba(245,197,24,0.1);
+    }
+    .cta-title { font-family: var(--fd); font-size: clamp(2rem,4.5vw,3rem); font-weight: 700; color: var(--gold); margin-bottom: 0.8rem; }
+    .cta-sub { font-size: 0.95rem; color: rgba(255,255,255,0.55); max-width: 490px; margin: 0 auto 2.5rem; line-height: 1.75; }
+
+    /* ===================== FOOTER ===================== */
+    footer {
+      padding: 3rem 2rem; text-align: center;
+      border-top: 1px solid rgba(245,197,24,0.09);
+    }
+    .footer-logo { font-family: var(--fd); font-size: 1.35rem; font-weight: 700; color: var(--gold); margin-bottom: 0.6rem; }
+    footer p { font-size: 0.75rem; color: rgba(255,255,255,0.28); letter-spacing: 0.04em; }
+
+    /* ===================== FLOAT WA ===================== */
+    .wa-float {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 300;
+      width: 58px; height: 58px; background: #25D366;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      text-decoration: none;
+      box-shadow: 0 4px 22px rgba(37,211,102,0.42);
+      transition: transform 0.2s, box-shadow 0.2s;
+      animation: waPulse 3s ease-in-out infinite;
+    }
+    .wa-float:hover { transform: scale(1.12); box-shadow: 0 8px 32px rgba(37,211,102,0.65); }
+    @keyframes waPulse {
+      0%,100% { box-shadow: 0 4px 22px rgba(37,211,102,0.42); }
+      50%      { box-shadow: 0 4px 32px rgba(37,211,102,0.7); }
+    }
+    .wa-float svg { width: 28px; height: 28px; fill: #fff; }
+
+    /* ===================== MOBILE NAV ===================== */
+    .mobile-menu {
+      display: none; position: absolute; top: 68px; left: 0; right: 0;
+      background: rgba(4,4,12,0.98); border-bottom: 1px solid rgba(245,197,24,0.12);
+      flex-direction: column; padding: 1.4rem 2rem; gap: 1.1rem;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      font-size: 0.8rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: rgba(255,255,255,0.65); text-decoration: none; transition: color 0.2s;
+    }
+    .mobile-menu a:hover { color: var(--gold); }
+
+    /* ===================== RESPONSIVE ===================== */
+    @media (max-width: 1024px) {
+      .modes-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .cat-grid, .app-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+      .app-phone-wrap { order: -1; }
+      .edu-grid { grid-template-columns: 1fr; }
+      .gal-grid { grid-template-columns: 1fr; }
+      .modes-grid { grid-template-columns: 1fr 1fr; }
+      
+      .buzzers { gap: 1.3rem; }
+      .buzzer { width: 88px; height: 88px; font-size: 1.6rem; }
+      .wifi-bar { flex-direction: column; text-align: center; }
+    }
+    @media (max-width: 480px) {
+      .modes-grid { grid-template-columns: 1fr; }
+      .buzzers { gap: 1rem; }
+      .buzzer { width: 78px; height: 78px; font-size: 1.4rem; }
+      .btn-wa { font-size: 0.68rem; padding: 0.55rem 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- =========================================================
+     NAVIGATION
+     ========================================================= -->
+<nav id="mainNav">
+  <a href="#inicio" class="nav-logo">
+    <img src="Logo_wipe_bg.webp" alt="¡Yo Respondo!">
+    <span class="nav-logo-text">¡YO RESPONDO!</span>
+  </a>
+
+  <ul class="nav-links">
+    <li><a href="#modos"     data-i18n="nav.modes">Modos</a></li>
+    <li><a href="#demo"      data-i18n="nav.demo">Demo</a></li>
+    <li><a href="#categorias" data-i18n="nav.cat">Categorías</a></li>
+    <li><a href="#app"       data-i18n="nav.app">App</a></li>
+    <li><a href="#educacion" data-i18n="nav.edu">Educación</a></li>
+    <li><a href="#galeria"   data-i18n="nav.gal">Galería</a></li>
+  </ul>
+
+  <div class="nav-right">
+    <div class="lang-toggle">
+      <button class="lang-btn active" data-lang="es">ES</button>
+      <button class="lang-btn"        data-lang="en">EN</button>
+    </div>
+    <a href="https://wa.me/56992518035" target="_blank" class="btn-wa" id="navWA">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      <span data-i18n="nav.contact">Contactar</span>
+    </a>
+    <button class="hamburger" id="hamburger" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#modos"      data-i18n="nav.modes">Modos</a>
+  <a href="#demo"       data-i18n="nav.demo">Demo</a>
+  <a href="#categorias" data-i18n="nav.cat">Categorías</a>
+  <a href="#app"        data-i18n="nav.app">App</a>
+  <a href="#educacion"  data-i18n="nav.edu">Educación</a>
+  <a href="#galeria"    data-i18n="nav.gal">Galería</a>
+</div>
+
+<!-- =========================================================
+     HERO
+     ========================================================= -->
+<section class="hero" id="inicio">
+  <div class="hero-spotlight"></div>
+  <div class="led-field" id="ledField"></div>
+
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="badge-pulse"></span>
+      <span data-i18n="hero.badge">Sistema Interactivo de Quiz</span>
+    </div>
+
+    <div class="hero-logo-wrap">
+      <img src="Logo_wipe_bg.webp" alt="¡Yo Respondo!">
+    </div>
+
+    <!-- Marquee frame with LED bulbs
+    <div class="hero-frame" id="heroFrame">
+      <div class="hero-title">
+        <span class="excl">¡</span>YO<br>RESPONDO<span class="excl">!</span>
+      </div>
+    </div>-->
+    <p class="hero-sub" data-i18n="hero.sub">
+      Sistema de quiz interactivo con buzzers para eventos, team building y educación.<br>Cuatro jugadores, categorías ilimitadas y ahora también en versión inalámbrica.
+    </p>
+
+    <div class="hero-cta">
+      <a href="#demo"  class="btn-gold"    data-i18n="hero.cta1">▶ Probar Demo</a>
+      <a href="#modos" class="btn-outline"  data-i18n="hero.cta2">Ver Modos de Juego</a>
+    </div>
+  </div>
+
+  <div class="scroll-cue"><div class="scroll-line"></div></div>
+</section>
+
+<!-- =========================================================
+     FEATURES STRIP
+     ========================================================= -->
+<div class="feat-strip">
+  <div class="feat-row">
+    <div class="feat-pill"><span class="feat-icon">🎯</span><span class="feat-text" data-i18n="f1">Hasta 4 jugadores simultáneos</span></div>
+    <div class="feat-pill"><span class="feat-icon">📡</span><span class="feat-text" data-i18n="f2">Versión inalámbrica vía WiFi</span></div>
+    <div class="feat-pill"><span class="feat-icon">🎵</span><span class="feat-text" data-i18n="f3">Audios 100% personalizables</span></div>
+    <div class="feat-pill"><span class="feat-icon">🎓</span><span class="feat-text" data-i18n="f4">Gamificación educativa</span></div>
+    <div class="feat-pill"><span class="feat-icon">🔧</span><span class="feat-text" data-i18n="f5">Sistemas embebidos robustos</span></div>
+    <div class="feat-pill"><span class="feat-icon">📱</span><span class="feat-text" data-i18n="f6">App móvil en desarrollo</span></div>
+  </div>
+</div>
+
+<!-- =========================================================
+     GAME MODES
+     ========================================================= -->
+<section class="modes-section" id="modos">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label" data-i18n="m.label">Modos de Juego</p>
+      <h2 class="section-title" data-i18n="m.title">Elige tu <span>modalidad</span></h2>
+      <div class="divider"></div>
+      <p style="font-size:0.9rem; color:rgba(255,255,255,0.52); max-width:560px; line-height:1.8;" data-i18n="m.sub">
+        El sistema se adapta a cualquier formato. Desde un desafío individual hasta un enfrentamiento de equipos completos. Cada modo tiene su propia dinámica.
+      </p>
+    </div>
+
+    <div class="modes-grid">
+
+      <!-- SOLO -->
+      <div class="mode-card c-red reveal">
+        <img src="Designer__1_.png" alt="Modo 1 vs 1" class="mode-thumb">
+        <div class="mode-body">
+          <div class="mode-tag" data-i18n="s.solo.tag">Modo Individual</div>
+          <div class="mode-name" data-i18n="s.solo.name">Un jugador contra el tiempo</div>
+          <p class="mode-desc" data-i18n="s.solo.desc">Perfecto para evaluaciones, autoevaluaciones y desafíos individuales. El participante responde solo presionando su buzzer rojo.</p>
+          <div class="mode-dots"><div class="pdot" style="background:var(--red);"></div></div>
+        </div>
+      </div>
+
+      <!-- 1v1 -->
+      <div class="mode-card c-blue reveal">
+        <img src="Designer__3_.png" alt="Modo 1 vs 1" class="mode-thumb">
+        <div class="mode-body">
+          <div class="mode-tag" data-i18n="s.duo.tag">Modo Duelo</div>
+          <div class="mode-name" data-i18n="s.duo.name">1 vs 1 — Cara a cara</div>
+          <p class="mode-desc" data-i18n="s.duo.desc">Dos competidores; el buzzer más rápido gana. Ideal para finales de concurso, team building y desafíos entre amigos.</p>
+          <div class="mode-dots">
+            <div class="pdot" style="background:var(--red);"></div>
+            <div class="pdot" style="background:var(--green);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAIRS -->
+      <div class="mode-card c-green reveal">
+        <img src="Designer__5_.png" alt="Modo Parejas" class="mode-thumb">
+        <div class="mode-body">
+          <div class="mode-tag" data-i18n="s.pairs.tag">Modo Parejas</div>
+          <div class="mode-name" data-i18n="s.pairs.name">Equipo 1 vs Equipo 2</div>
+          <p class="mode-desc" data-i18n="s.pairs.desc">Dos equipos de dos se enfrentan. Cualquier integrante puede presionar su buzzer y sumar puntos para su bando.</p>
+          <div class="mode-dots">
+            <div class="pdot" style="background:var(--red);"></div>
+            <div class="pdot" style="background:var(--yellow);"></div>
+            <div class="pdot" style="background:rgba(255,255,255,0.1);border:1px solid #444;"></div>
+            <div class="pdot" style="background:var(--green);"></div>
+            <div class="pdot" style="background:var(--blue);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4P -->
+      <div class="mode-card c-gold reveal">
+        <img src="Designer__4_.png" alt="Modo 4 Jugadores" class="mode-thumb">
+        <div class="mode-body">
+          <div class="mode-tag" data-i18n="s.quad.tag">Modo Grupal</div>
+          <div class="mode-name" data-i18n="s.quad.name">4 Jugadores — Todos contra todos</div>
+          <p class="mode-desc" data-i18n="s.quad.desc">El formato más emocionante. Cuatro competidores con sus buzzers de colores luchando por ser el primero en responder.</p>
+          <div class="mode-dots">
+            <div class="pdot" style="background:var(--red);"></div>
+            <div class="pdot" style="background:var(--yellow);"></div>
+            <div class="pdot" style="background:var(--green);"></div>
+            <div class="pdot" style="background:var(--blue);"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     DEMO INTERACTIVO
+     ========================================================= -->
+<section class="demo-section" id="demo">
+  <div class="container demo-inner">
+    <div class="reveal" style="text-align:center; margin-bottom:0.5rem;">
+      <p class="section-label" data-i18n="d.label">Demo Interactivo</p>
+      <h2 class="section-title" data-i18n="d.title">Escucha cómo <span>suena</span></h2>
+      <div class="divider" style="margin:1rem auto;"></div>
+      <p style="font-size:0.88rem; color:rgba(255,255,255,0.5); max-width:480px; margin:0 auto 2rem; line-height:1.8;" data-i18n="d.sub">
+        Cada buzzer reproduce un audio personalizado. La música de fondo suena mientras navegas. Presiona cualquier botón para activar el sonido de ese jugador.
+      </p>
+    </div>
+
+    <!-- BG music toggle -->
+    <div style="display:flex;justify-content:center;" class="reveal">
+      <div class="bg-toggle" id="bgToggle">
+        <span style="font-size:1.1rem;">🎵</span>
+        <span class="bg-toggle-label" data-i18n="d.bgLabel">Música de fondo</span>
+        <div class="mbars" id="mbars">
+          <div class="mbar" style="height:5px;"></div>
+          <div class="mbar" style="height:11px;"></div>
+          <div class="mbar" style="height:7px;"></div>
+          <div class="mbar" style="height:13px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Buzzers -->
+    <div class="buzzers reveal">
+      <div class="buzzer-wrap">
+        <button class="buzzer red"    id="bz1" data-idx="0">🔴</button>
+        <span class="buzzer-lbl" data-i18n="d.p1">Jugador 1</span>
+      </div>
+      <div class="buzzer-wrap">
+        <button class="buzzer yellow" id="bz2" data-idx="1">🟡</button>
+        <span class="buzzer-lbl" data-i18n="d.p2">Jugador 2</span>
+      </div>
+      <div class="buzzer-wrap">
+        <button class="buzzer green"  id="bz3" data-idx="2">🟢</button>
+        <span class="buzzer-lbl" data-i18n="d.p3">Jugador 3</span>
+      </div>
+      <div class="buzzer-wrap">
+        <button class="buzzer blue"   id="bz4" data-idx="3">🔵</button>
+        <span class="buzzer-lbl" data-i18n="d.p4">Jugador 4</span>
+      </div>
+    </div>
+
+    <p class="demo-note-small reveal" data-i18n="d.note">* Los audios son 100% personalizables según el tipo de concurso y el cliente.</p>
+    <div class="audio-tip" id="audioTip" data-i18n="d.tip">💡 Haz clic en cualquier buzzer para iniciar la experiencia de audio.</div>
+  </div>
+</section>
+
+<!-- =========================================================
+     CATEGORIES
+     ========================================================= -->
+<section class="cat-section" id="categorias">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label" data-i18n="c.label">Contenido</p>
+      <h2 class="section-title" data-i18n="c.title">Categorías <span>personalizables</span></h2>
+      <div class="divider"></div>
+    </div>
+
+    <div class="cat-grid">
+      <div class="cat-text reveal">
+        <p data-i18n="c.p1">El sistema no viene atado a un solo tema. Cada evento puede tener su propia categoría diseñada a medida: desde <strong>cultura general</strong> hasta temáticas ultra específicas como el universo de tu artista favorito.</p>
+        <p data-i18n="c.p2">¿No existe la categoría que necesitas? <strong>La preparamos especialmente para ti.</strong> Fútbol argentino, K-Pop, Dragon Ball, historia del cine de terror, monumentos del mundo… las posibilidades son ilimitadas.</p>
+        <p data-i18n="c.p3">Ideal para <strong>despedidas de soltera</strong>, <strong>cumpleaños temáticos</strong>, <strong>eventos corporativos</strong>, <strong>competencias matemáticas</strong> y <strong>actividades educativas</strong>.</p>
+        <div class="cat-tags">
+          <span class="cat-tag" data-i18n="ct.1">Cultura General</span>
+          <span class="cat-tag" data-i18n="ct.2">Historia Universal</span>
+          <span class="cat-tag" data-i18n="ct.3">Matemáticas</span>
+          <span class="cat-tag" data-i18n="ct.4">Despedida de Soltera</span>
+          <span class="cat-tag" data-i18n="ct.5">Fútbol</span>
+          <span class="cat-tag" data-i18n="ct.6">Música & Bandas</span>
+          <span class="cat-tag" data-i18n="ct.7">Cine & Series</span>
+          <span class="cat-tag" data-i18n="ct.8">K-Pop</span>
+          <span class="cat-tag" data-i18n="ct.9">Anime</span>
+          <span class="cat-tag" data-i18n="ct.10">+ La tuya ✨</span>
+        </div>
+      </div>
+
+      <div class="cat-img-wrap reveal">
+        <img src="categorias.png" alt="Categorías disponibles">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     APP MÓVIL
+     ========================================================= -->
+<section class="app-section" id="app">
+  <div class="container">
+    <div class="app-grid">
+
+      <div class="app-text reveal">
+        <div class="soon-badge"><span>🚀</span><span data-i18n="a.badge">En Desarrollo</span></div>
+        <p class="section-label" data-i18n="a.label">Plataforma Digital</p>
+        <h2 class="section-title" data-i18n="a.title">App móvil<br><span>próximamente</span></h2>
+        <div class="divider"></div>
+        <p data-i18n="a.p1">Inspirada en la experiencia de plataformas como <strong style="color:rgba(255,255,255,0.8);">Preguntados</strong>, nuestra app llevará ¡Yo Respondo! a la palma de tu mano. Juega en cualquier momento, desde cualquier lugar.</p>
+        <p style="margin-top:0.9rem;" data-i18n="a.p2">La interfaz está diseñada para verse perfecta tanto en <strong style="color:rgba(255,255,255,0.8);">teléfonos verticales</strong> como en <strong style="color:rgba(255,255,255,0.8);">pantallas horizontales</strong> para computadores y televisores.</p>
+
+        <div class="dev-prog">
+          <div class="dev-prog-lbl">
+            <span data-i18n="a.devlbl">Desarrollo en curso</span>
+            <span>65%</span>
+          </div>
+          <div class="dev-track"><div class="dev-fill"></div></div>
+        </div>
+      </div>
+
+      <div class="phone-wrap reveal">
+        <img src="app_wipe_bg.webp" alt="App móvil ¡Yo Respondo!" style="width:100%; height:auto; display:block;">
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     EDUCATIONAL GAMIFICATION
+     ========================================================= -->
+<section class="edu-section" id="educacion">
+  <div class="container">
+    <div class="reveal" style="text-align:center; max-width:640px; margin:0 auto;">
+      <p class="section-label" data-i18n="e.label">Propósito</p>
+      <h2 class="section-title" data-i18n="e.title">Gamificación <span>educativa</span></h2>
+      <div class="divider" style="margin:1rem auto;"></div>
+      <p style="font-size:0.88rem; color:rgba(255,255,255,0.5); line-height:1.8;" data-i18n="e.intro">¡Yo Respondo! transforma el aprendizaje en una experiencia de juego emocionante. El sistema puede integrarse en cualquier proceso educativo para aumentar la participación, la retención y el compromiso.</p>
+    </div>
+
+    <div class="edu-grid">
+      <div class="edu-card reveal">
+        <span class="edu-icon">🏫</span>
+        <div class="edu-card-title" data-i18n="e.c1.t">Colegios e Instituciones</div>
+        <p class="edu-card-text" data-i18n="e.c1.d">Refuerza cualquier materia con dinámicas de preguntas y respuestas. Los alumnos aprenden mientras compiten, aumentando la motivación y la retención del contenido.</p>
+      </div>
+      <div class="edu-card reveal">
+        <span class="edu-icon">🏢</span>
+        <div class="edu-card-title" data-i18n="e.c2.t">Empresas y Team Building</div>
+        <p class="edu-card-text" data-i18n="e.c2.d">Fortalece el trabajo en equipo con concursos temáticos personalizados. Ideal para inducciones, capacitaciones y actividades de integración corporativa.</p>
+      </div>
+      <div class="edu-card reveal">
+        <span class="edu-icon">🎉</span>
+        <div class="edu-card-title" data-i18n="e.c3.t">Eventos y Celebraciones</div>
+        <p class="edu-card-text" data-i18n="e.c3.d">Cumpleaños, despedidas de soltera, aniversarios. Convierte cualquier reunión en una experiencia de entretenimiento única e interactiva para todos los invitados.</p>
+      </div>
+    </div>
+
+    <!-- WiFi bar -->
+    <div class="wifi-bar reveal">
+      <div class="wifi-icon">📡</div>
+      <div>
+        <div class="wifi-title" data-i18n="w.t">Futura Version - Versión Inalámbrica WiFi</div>
+        <p class="wifi-text" data-i18n="w.d">La próxima versión del sistema funcionará sin cables. Los modulos se conectarán mediante WiFi, ofreciendo una flexibilidad absoluta para diseñar el espacio y logrando una instalación más rápida y estéticamente limpia en todo tipo de eventos</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     GALLERY
+     ========================================================= -->
+<section class="gal-section" id="galeria">
+  <div class="container">
+    <div class="reveal" style="text-align:center;">
+      <p class="section-label" data-i18n="g.label">El Producto Real</p>
+      <h2 class="section-title" data-i18n="g.title">Así se ve <span>en acción</span></h2>
+      <div class="divider" style="margin:1rem auto;"></div>
+      <p style="font-size:0.88rem; color:rgba(255,255,255,0.45); max-width:500px; margin:0 auto 3rem; line-height:1.8;" data-i18n="g.sub">Los módulos físicos combinan diseño elegante con tecnología robusta basada en sistemas embebidos. Disponibles en versión cableada y inalámbrica WiFi.</p>
+    </div>
+
+    <div class="gal-grid">
+      <div class="gal-item reveal">
+        <img src="vista-frontal.webp" alt="Módulos ¡Yo Respondo! — Vista frontal">
+        <div class="gal-caption" data-i18n="g.cap1">Módulos de buzzer — Vista frontal con buzzers verde y rojo</div>
+      </div>
+      <div class="gal-item reveal">
+        <img src="vista-lateral.webp" alt="Módulo ¡Yo Respondo! — Vista lateral">
+        <div class="gal-caption" data-i18n="g.cap2">Módulo individual — Vista lateral, diseño compacto y elegante</div>
+      </div>
+    </div>
+
+    <div class="reveal" style="margin-top:1.5rem; text-align:center;">
+      <p style="font-size:0.74rem; color:rgba(255,255,255,0.26); font-style:italic;" data-i18n="g.note">Construido con sistemas embebidos, reproducción de audio integrada y control de iluminación. Disponible con conexión por cable o versión inalámbrica WiFi.</p>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     CTA
+     ========================================================= -->
+<div class="cta-band">
+  <div class="container-narrow">
+    <p class="section-label" style="display:block;text-align:center;" data-i18n="cta.label">¿Listo para jugar?</p>
+    <h2 class="cta-title" data-i18n="cta.title">¡Hablemos de tu evento!</h2>
+    <p class="cta-sub" data-i18n="cta.sub">Cuéntanos tu idea y preparamos la categoría perfecta para tu ocasión. Contacto directo y sin complicaciones.</p>
+    <a href="https://wa.me/56992518035" target="_blank" class="btn-wa" style="font-size:0.85rem; padding:0.85rem 1.8rem;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      <span data-i18n="cta.btn">Escribir por WhatsApp</span>
+    </a>
+  </div>
+</div>
+
+<!-- =========================================================
+     FOOTER
+     ========================================================= -->
+<footer>
+  <div class="footer-logo">¡YO RESPONDO!</div>
+  <p>Valparaíso, Chile · <span data-i18n="ft.sub">Sistema Interactivo de Quiz</span></p>
+  <p style="margin-top:0.4rem;">© 2026 ¡Yo Respondo! · <span data-i18n="ft.rights">Todos los derechos reservados</span></p>
+</footer>
+
+<!-- Floating WhatsApp -->
+<a href="https://wa.me/56992518035" target="_blank" class="wa-float" aria-label="WhatsApp">
+  <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
+
+<!-- Audio elements -->
+<audio id="a0" src="000.mp3" loop preload="none"></audio>
+<audio id="a1" src="001.mp3" preload="none"></audio>
+<audio id="a2" src="002.mp3" preload="none"></audio>
+<audio id="a3" src="003.mp3" preload="none"></audio>
+<audio id="a4" src="004.mp3" preload="none"></audio>
+
+<!-- =========================================================
+     JAVASCRIPT
+     ========================================================= -->
+<script>
+/* ===================== TRANSLATIONS ===================== */
+const T = {
+  es: {
+    'nav.modes':'Modos','nav.demo':'Demo','nav.cat':'Categorías','nav.app':'App','nav.edu':'Educación','nav.gal':'Galería','nav.contact':'Contactar',
+    'hero.badge':'Sistema Interactivo de Quiz',
+    'hero.sub':'Sistema de quiz interactivo con buzzers para eventos, team building y educación.<br>Cuatro jugadores, categorías ilimitadas y ahora también en versión inalámbrica.',
+    'hero.cta1':'▶ Probar Demo','hero.cta2':'Ver Modos de Juego',
+    'f1':'Hasta 4 jugadores simultáneos','f2':'Versión inalámbrica vía WiFi','f3':'Audios 100% personalizables','f4':'Gamificación educativa','f5':'Sistemas embebidos robustos','f6':'App móvil en desarrollo',
+    'm.label':'Modos de Juego','m.title':'Elige tu modalidad','m.sub':'El sistema se adapta a cualquier formato. Desde un desafío individual hasta un enfrentamiento de equipos completos. Cada modo tiene su propia dinámica.',
+    's.solo':'SOLO PLAYER','s.solo.tag':'Modo Individual','s.solo.name':'Un jugador contra el tiempo','s.solo.desc':'Perfecto para evaluaciones, autoevaluaciones y desafíos individuales. El participante responde solo presionando su buzzer rojo.',
+    's.duo.tag':'Modo Duelo','s.duo.name':'1 vs 1 — Cara a cara','s.duo.desc':'Dos competidores; el buzzer más rápido gana. Ideal para finales de concurso, team building y desafíos entre amigos.',
+    's.pairs.tag':'Modo Parejas','s.pairs.name':'Equipo 1 vs Equipo 2','s.pairs.desc':'Dos equipos de dos se enfrentan. Cualquier integrante puede presionar su buzzer y sumar puntos para su bando.',
+    's.quad.tag':'Modo Grupal','s.quad.name':'4 Jugadores — Todos contra todos','s.quad.desc':'El formato más emocionante. Cuatro competidores con sus buzzers de colores luchando por ser el primero en responder.',
+    'd.label':'Demo Interactivo','d.title':'Escucha cómo suena','d.sub':'Cada buzzer reproduce un audio personalizado. La música de fondo suena mientras navegas. Presiona cualquier botón para activar el sonido de ese jugador.',
+    'd.bgLabel':'Música de fondo','d.p1':'Jugador 1','d.p2':'Jugador 2','d.p3':'Jugador 3','d.p4':'Jugador 4',
+    'd.note':'* Los audios son 100% personalizables según el tipo de concurso y el cliente.',
+    'd.tip':'💡 Haz clic en cualquier buzzer para iniciar la experiencia de audio.',
+    'c.label':'Contenido','c.title':'Categorías personalizables',
+    'c.p1':'El sistema no viene atado a un solo tema. Cada evento puede tener su propia categoría diseñada a medida: desde <strong>cultura general</strong> hasta temáticas ultra específicas como el universo de tu artista favorito.',
+    'c.p2':'¿No existe la categoría que necesitas? <strong>La preparamos especialmente para ti.</strong> Fútbol argentino, K-Pop, Dragon Ball, historia del cine de terror, monumentos del mundo… las posibilidades son ilimitadas.',
+    'c.p3':'Ideal para <strong>despedidas de soltera</strong>, <strong>cumpleaños temáticos</strong>, <strong>eventos corporativos</strong>, <strong>competencias matemáticas</strong> y <strong>actividades educativas</strong>.',
+    'ct.1':'Cultura General','ct.2':'Historia Universal','ct.3':'Matemáticas','ct.4':'Despedida de Soltera','ct.5':'Fútbol','ct.6':'Música & Bandas','ct.7':'Cine & Series','ct.8':'K-Pop','ct.9':'Anime','ct.10':'+ La tuya ✨',
+    'a.badge':'En Desarrollo','a.label':'Plataforma Digital','a.title':'App móvil<br><span>próximamente</span>',
+    'a.p1':'Inspirada en la experiencia de plataformas como <strong style="color:rgba(255,255,255,0.8);">Preguntados</strong>, nuestra app llevará ¡Yo Respondo! a la palma de tu mano. Juega en cualquier momento, desde cualquier lugar.',
+    'a.p2':'La interfaz está diseñada para verse perfecta tanto en <strong style="color:rgba(255,255,255,0.8);">teléfonos verticales</strong> como en <strong style="color:rgba(255,255,255,0.8);">pantallas horizontales</strong> para computadores y televisores.',
+    'a.devlbl':'Desarrollo en curso',
+    'e.label':'Propósito','e.title':'Gamificación educativa','e.intro':'¡Yo Respondo! transforma el aprendizaje en una experiencia de juego emocionante. El sistema puede integrarse en cualquier proceso educativo para aumentar la participación, la retención y el compromiso.',
+    'e.c1.t':'Colegios e Instituciones','e.c1.d':'Refuerza cualquier materia con dinámicas de preguntas y respuestas. Los alumnos aprenden mientras compiten, aumentando la motivación y la retención del contenido.',
+    'e.c2.t':'Empresas y Team Building','e.c2.d':'Fortalece el trabajo en equipo con concursos temáticos personalizados. Ideal para inducciones, capacitaciones y actividades de integración corporativa.',
+    'e.c3.t':'Eventos y Celebraciones','e.c3.d':'Cumpleaños, despedidas de soltera, aniversarios. Convierte cualquier reunión en una experiencia de entretenimiento única e interactiva para todos los invitados.',
+    'w.t':'Versión Inalámbrica WiFi — Ya disponible','w.d':'Desarrollamos una versión del sistema que elimina completamente el cableado. Los buzzers se conectan vía WiFi, brindando mayor flexibilidad en la disposición del espacio y una instalación más rápida y limpia para cualquier tipo de evento.',
+    'g.label':'El Producto Real','g.title':'Así se ve en acción','g.sub':'Los módulos físicos combinan diseño elegante con tecnología robusta basada en sistemas embebidos. Disponibles en versión cableada y inalámbrica WiFi.',
+    'g.cap1':'Módulos de buzzer — Vista frontal con buzzers verde y rojo','g.cap2':'Módulo individual — Vista lateral, diseño compacto y elegante',
+    'g.note':'Construido con sistemas embebidos, reproducción de audio integrada y control de iluminación. Disponible con conexión por cable o versión inalámbrica WiFi.',
+    'cta.label':'¿Listo para jugar?','cta.title':'¡Hablemos de tu evento!','cta.sub':'Cuéntanos tu idea y preparamos la categoría perfecta para tu ocasión. Contacto directo y sin complicaciones.','cta.btn':'Escribir por WhatsApp',
+    'ft.sub':'Sistema Interactivo de Quiz','ft.rights':'Todos los derechos reservados'
+  },
+  en: {
+    'nav.modes':'Modes','nav.demo':'Demo','nav.cat':'Categories','nav.app':'App','nav.edu':'Education','nav.gal':'Gallery','nav.contact':'Contact',
+    'hero.badge':'Interactive Quiz System',
+    'hero.sub':'Interactive quiz system with physical buzzers for events, team building and education.<br>Four players, unlimited categories, now also available wireless.',
+    'hero.cta1':'▶ Try Demo','hero.cta2':'See Game Modes',
+    'f1':'Up to 4 simultaneous players','f2':'Wireless version via WiFi','f3':'100% customizable audio','f4':'Educational gamification','f5':'Robust embedded systems','f6':'Mobile app in development',
+    'm.label':'Game Modes','m.title':'Choose your <span>mode</span>','m.sub':'The system adapts to any format — from individual challenges to full team battles. Each mode has its own dynamic and excitement.',
+    's.solo':'SOLO PLAYER','s.solo.tag':'Solo Mode','s.solo.name':'One player against the clock','s.solo.desc':'Perfect for assessments, self-evaluation and individual challenges. The participant answers alone by pressing their red buzzer.',
+    's.duo.tag':'Duel Mode','s.duo.name':'1 vs 1 — Head to head','s.duo.desc':'Two competitors; fastest buzzer wins. Great for competition finals, team building and friend challenges.',
+    's.pairs.tag':'Pairs Mode','s.pairs.name':'Team 1 vs Team 2','s.pairs.desc':'Two teams of two compete. Any team member can press their buzzer to score points for their side.',
+    's.quad.tag':'Group Mode','s.quad.name':'4 Players — Free for all','s.quad.desc':'The most exciting format. Four competitors with colored buzzers racing to be first to answer.',
+    'd.label':'Interactive Demo','d.title':'Hear how it <span>sounds</span>','d.sub':'Each buzzer plays a custom audio. Background music plays while you browse. Press any button to trigger that player\'s sound.',
+    'd.bgLabel':'Background music','d.p1':'Player 1','d.p2':'Player 2','d.p3':'Player 3','d.p4':'Player 4',
+    'd.note':'* All audio is 100% customizable to match each event type and client.',
+    'd.tip':'💡 Click any buzzer to start the audio experience.',
+    'c.label':'Content','c.title':'Customizable <span>categories</span>',
+    'c.p1':'The system isn\'t tied to a single topic. Each event can have its own custom-designed category — from <strong>general knowledge</strong> to ultra-specific themes like your favorite artist\'s universe.',
+    'c.p2':'Don\'t see the category you need? <strong>We\'ll create it especially for you.</strong> Argentine football, K-Pop, Dragon Ball, horror film history, world monuments… possibilities are unlimited.',
+    'c.p3':'Perfect for <strong>bachelorette parties</strong>, <strong>themed birthdays</strong>, <strong>corporate events</strong>, <strong>math competitions</strong> and <strong>educational activities</strong>.',
+    'ct.1':'General Knowledge','ct.2':'World History','ct.3':'Math','ct.4':'Bachelorette Party','ct.5':'Football','ct.6':'Music & Bands','ct.7':'Film & TV','ct.8':'K-Pop','ct.9':'Anime','ct.10':'+ Yours ✨',
+    'a.badge':'In Development','a.label':'Digital Platform','a.title':'Mobile app<br><span>coming soon</span>',
+    'a.p1':'Inspired by platforms like <strong style="color:rgba(255,255,255,0.8);">Preguntados</strong>, our mobile app will bring ¡Yo Respondo! to your fingertips. Play anywhere, anytime.',
+    'a.p2':'The interface is designed to look great on both <strong style="color:rgba(255,255,255,0.8);">vertical phones</strong> and <strong style="color:rgba(255,255,255,0.8);">horizontal screens</strong> for computers and TVs.',
+    'a.devlbl':'Development in progress',
+    'e.label':'Purpose','e.title':'Educational <span>gamification</span>','e.intro':'¡Yo Respondo! transforms learning into an exciting game experience. The system integrates into any educational process to boost participation, retention and engagement.',
+    'e.c1.t':'Schools & Institutions','e.c1.d':'Reinforce any subject with Q&A dynamics. Students learn while competing, boosting motivation and content retention.',
+    'e.c2.t':'Enterprises & Team Building','e.c2.d':'Strengthen teamwork with custom themed quizzes. Ideal for onboarding, training and corporate integration activities.',
+    'e.c3.t':'Events & Celebrations','e.c3.d':'Birthdays, bachelorette parties, anniversaries. Turn any gathering into a unique interactive entertainment experience.',
+    'w.t':'Wireless WiFi Version — Now Available','w.d':'We developed a version that completely eliminates cabling. Buzzers connect via WiFi, providing greater flexibility in space arrangement and faster, cleaner setup for any event.',
+    'g.label':'The Real Product','g.title':'See it <span>in action</span>','g.sub':'The physical modules combine elegant design with robust technology based on embedded systems. Available in wired and wireless WiFi versions.',
+    'g.cap1':'Buzzer modules — front view with green and red buzzers','g.cap2':'Single module — side view, compact and elegant design',
+    'g.note':'Built with embedded systems, integrated audio playback and lighting control. Available wired or wireless via WiFi.',
+    'cta.label':'Ready to play?','cta.title':'Let\'s talk about your event!','cta.sub':'Tell us your idea and we\'ll create the perfect category for your occasion. Direct contact, no hassle.','cta.btn':'Chat on WhatsApp',
+    'ft.sub':'Interactive Quiz System','ft.rights':'All rights reserved'
+  }
+};
+
+let lang = 'es';
+
+function applyLang(l) {
+  lang = l;
+  document.documentElement.lang = l;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (T[l][key] !== undefined) el.innerHTML = T[l][key];
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === l));
+}
+
+document.querySelectorAll('.lang-btn').forEach(b => b.addEventListener('click', () => applyLang(b.dataset.lang)));
+
+/* ===================== NAV ===================== */
+const mainNav = document.getElementById('mainNav');
+window.addEventListener('scroll', () => mainNav.classList.toggle('scrolled', scrollY > 60));
+
+/* ===================== HAMBURGER ===================== */
+const ham = document.getElementById('hamburger');
+const mMenu = document.getElementById('mobileMenu');
+ham.addEventListener('click', () => mMenu.classList.toggle('open'));
+mMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mMenu.classList.remove('open')));
+
+/* ===================== LED FIELD ===================== */
+const ledField = document.getElementById('ledField');
+const COLS = ['#F5C518','#E63946','#2DC653','#4895EF','#FF9500'];
+for (let i = 0; i < 35; i++) {
+  const d = document.createElement('div');
+  d.classList.add('led-dot');
+  d.style.cssText = `
+    background:${COLS[i%COLS.length]};
+    left:${Math.random()*100}%;
+    top:${Math.random()*100}%;
+    animation-delay:${(Math.random()*4).toFixed(2)}s;
+    animation-duration:${(2+Math.random()*2.5).toFixed(2)}s;
+    opacity:0.06;
+  `;
+  ledField.appendChild(d);
+}
+
+/* ===================== LED FRAME BULBS ===================== */
+
+/* ===================== SCROLL REVEAL ===================== */
+const rObs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      rObs.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => rObs.observe(el));
+
+/* ===================== AUDIO ===================== */
+const bgAudio = document.getElementById('a0');
+const pAudios = [document.getElementById('a1'), document.getElementById('a2'), document.getElementById('a3'), document.getElementById('a4')];
+const mbars   = document.getElementById('mbars');
+const bgToggle = document.getElementById('bgToggle');
+const audioTip = document.getElementById('audioTip');
+
+let bgOn = false;
+let unlocked = false;
+
+// Show tip on first visit
+audioTip.style.display = 'block';
+
+function unlock() {
+  if (unlocked) return;
+  unlocked = true;
+  audioTip.style.display = 'none';
+  startBG();
+}
+
+function startBG() {
+  bgAudio.volume = 0.22;
+  bgAudio.play().catch(() => {});
+  bgOn = true;
+  mbars.classList.remove('paused');
+}
+function stopBG() {
+  bgAudio.pause();
+  bgOn = false;
+  mbars.classList.add('paused');
+}
+
+bgToggle.addEventListener('click', () => {
+  if (!unlocked) { unlock(); return; }
+  bgOn ? stopBG() : startBG();
+});
+
+document.querySelectorAll('.buzzer').forEach(btn => {
+  btn.addEventListener('click', () => {
+    unlock();
+    const idx = parseInt(btn.dataset.idx);
+    // pause bg briefly
+    if (bgOn) bgAudio.pause();
+    // stop all player audios
+    pAudios.forEach(a => { a.pause(); a.currentTime = 0; });
+    // play this one
+    pAudios[idx].volume = 0.92;
+    pAudios[idx].play().catch(() => {});
+    // animate
+    btn.classList.remove('popping');
+    void btn.offsetWidth;
+    btn.classList.add('popping');
+    btn.addEventListener('animationend', () => btn.classList.remove('popping'), {once:true});
+    // resume bg when done
+    pAudios[idx].onended = () => { if (bgOn) bgAudio.play().catch(() => {}); };
+  });
+});
+</script>
+</body>
+</html>
